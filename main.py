@@ -41,8 +41,8 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
 
         self.table.setStyleSheet(begin_wrap + font_size + end_wrap)
-        
-        
+
+
         self.table.horizontalHeader().setStyleSheet("QHeaderView{" + font_size + end_wrap)
         self.table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         self.table.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
@@ -62,11 +62,11 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
         self.showFullScreen()
         window_width = self.frameGeometry().width()
-        
+
         self.table.horizontalHeader().setMinimumSectionSize(window_width // 4)
         self.table.horizontalHeader().setMaximumSectionSize(window_width // 4)
         self.table.setCurrentCell(-1,-1)
-        
+
         #self.table.setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         #for i in range(self.table.rowCount()):
         #    for j in range(self.table.columnCount()):
@@ -77,7 +77,8 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
         #reading the config
         conf = configparser.ConfigParser()
         conf.read(config_name, encoding='utf-8')
-
+        if not os.path.exists('audio_resources/'):
+            os.makedirs('audio_resources')
         #setting up logging with proper level
         filename_list = str(datetime.datetime.today()).strip().split(' ')
         logging_filename = f"logs/{filename_list[0]}/{filename_list[-1].replace(':','.')}.txt"
@@ -86,7 +87,7 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
             os.makedirs(folderpath)
         open(logging_filename, "w+")
         logging.basicConfig(filename = logging_filename, level = int(conf.get('logging_settings', 'logging_level')))
-        
+
         logging.debug('Logger is set up. Reading config...')
 
         #reading the socket settings
@@ -109,16 +110,16 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
         logging.debug('Have read backend values. Inserting rooms...')
         self.insert_room_numbers()
         logging.debug('Inserted rooms. Applying frontend settings...')
-        
+
         #reading the repeated message and the timeout of its looped playback
         self.reminder_text = conf.get('frontend_settings', 'reminder_text')
         self.reminder_repeat_timeout = int(conf.get('frontend_settings', 'reminder_repeat_timeout'))
-        
-        
+
+
         #reading styling information
         self.application_font_size = int(conf.get('frontend_settings', 'application_font_size'))
         #self.application_background_color = Serverapp_Ui.parse_list(conf.get('frontend_settings', 'application_background_color'))
-        
+
         #apply styling
         self.update_table_stylesheet_and_resize()
 
@@ -161,7 +162,7 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
             events = self.selector.select(timeout = 0)
             if events == []:
                 time.sleep(self.no_selector_events_timeout)
-            else:    
+            else:
                 for key, mask in events:
                     if key.data is None:
                         accept_new(key.fileobj)
@@ -169,21 +170,21 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
                         message = key.data
                         try:
                             need_action = message.process_events_and_require_intervention(mask)
-                            
+
                             if need_action:
-                                
+
                                 ae_flag = (message.request.get('data').get('room_index') == message.assigned_room_index)
                                 av_flag = self.is_room_available[message.request.get('data').get('room_index')]
                                 if ae_flag or av_flag:
                                     if Serverapp_Ui.data_from_client_check(message.request.get('data')):
-                                        if message.assigned_room_index != -1:
+                                        if message.assigned_room_index != -1 and not ae_flag:
                                             self.is_room_available[message.assigned_room_index] = 1
                                             self.cleanup_table(message.assigned_room_index)
-                                        
+
                                         self.is_room_available[message.request.get('data').get('room_index')] = 0
                                         last_index = message.assigned_room_index
                                         message.assigned_room_index = message.request.get('data').get('room_index')
-                                       
+
                                         self.change_room_status(message.request.get('data'))
                                         logging.debug(f"Successfully changed status for room {message.request.get('data').get('room_index')}, was {last_index}")
                                         message.insertion_buffer.append("Изменения успешно внесены!")
@@ -201,14 +202,14 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
                             if message.assigned_room_index != -1:
                                 self.is_room_available[message.assigned_room_index] = 1
                             message.close()
-                            
+
 
     def cleanup_table(self, index):
         cleanup_data = {
             'room_index': index,
             'doctor_index': 0,
             'study_index': 0,
-            'state_index': 0 
+            'state_index': 0
         }
         self.change_room_status(cleanup_data)
 
@@ -217,7 +218,7 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
     def data_from_client_check(data):
         return True
 
-    
+
     def setup_socket_thread(self):
         #using selector to manage multiple connections without GIL
         logging.debug('Setting up socket thread...')
@@ -240,14 +241,14 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
 
 #left here for easier reference in change_room_status
-#'data': 
+#'data':
 #    {
 #        'room_index': int,
 #        'doctor_index': int,
 #        'study_index': int,
 #        'state_index': int    #0 - standby, 1 - not ready, 2 - ready
 #    }
-    
+
     @staticmethod
     def soft_wrap_line(data, charcount = 15):
         data = data.split(' ')
@@ -262,7 +263,7 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
         return ' '.join(res)
 
 
-    
+
     def change_room_status(self, data, is_from_start = False):
         room_index = data.get('room_index')
 
@@ -275,7 +276,7 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
         state = Serverapp_Ui.soft_wrap_line(self.state_values[data.get('state_index')])
         #study = self.
         self.table.setItem(room_index, 1, QtWidgets.QTableWidgetItem(doctor))
-        
+
         self.table.setItem(room_index, 2, QtWidgets.QTableWidgetItem(study))
         self.table.setItem(room_index, 3, QtWidgets.QTableWidgetItem(state))
         self.table.resizeRowsToContents()
@@ -316,7 +317,7 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
                 #since 1:00.99 is still 60 seconds, in the worst case with 1 second delay added
                 #we would have the files play one right after another -> unwanted behaviour
                 time.sleep(int(filename.split('.')[-2]) + 1 + self.voice_delay_between_messages)
-                
+
 
 
     @staticmethod
@@ -349,9 +350,9 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
         logging.debug('Setting up audio thread...')
         #setting up a thread responsible for playing audio
         self.audio_thread = threading.Thread(target = self.audio_thread_function, daemon = True)
-        
 
-        #setting up a timer to enqueue a reminder every set period of time 
+
+        #setting up a timer to enqueue a reminder every set period of time
         #self.reminder_timer = QtCore.QTimer()
         #self.reminder_timer.setInterval(self.reminder_repeat_timeout)
         #self.reminder_timer.timeout.connect(self.enqueue_reminder)
@@ -363,7 +364,7 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.audio_thread.start()
         logging.debug('Audio thread successfully started!')
 
-    
+
 
     def __init__(self):
         super().__init__()
@@ -372,7 +373,7 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.apply_config('config.ini')
 
         self.setup_audio_thread()
-        
+
         self.setup_socket_thread()
 
 
@@ -385,7 +386,7 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
 def main():
     app = QtWidgets.QApplication([])
-    
+
     window = Serverapp_Ui()
     window.show()
     app.exec_()
