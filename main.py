@@ -324,7 +324,7 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
     @staticmethod
     def convert_text_to_speech(data):
-        tts = gtts.gTTS(data, lang = 'ru', tld = 'cn')
+        tts = gtts.gTTS(data, lang = 'ru')
         #we want to include the file duration later on
         filename_incomplete = f'audio_resources//{time.time()}.mp3'
         tts.save(filename_incomplete)
@@ -338,8 +338,12 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
 
     def enqueue_text(self, data):
-        filename = Serverapp_Ui.convert_text_to_speech(data)
-        self.audio_queue.put(filename)
+        try:
+            filename = Serverapp_Ui.convert_text_to_speech(data)
+        except Exception:
+            logging.error('Could not create a voiceover file.', exc_info=True)
+        else:
+            self.audio_queue.put(filename)
 
 
     def enqueue_reminder(self):

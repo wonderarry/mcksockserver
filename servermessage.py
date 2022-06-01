@@ -98,7 +98,9 @@ class Message:
                 if data:
                     self._receive_buffer += data
                 else:
-                    raise RuntimeError("Peer closed")  
+                    logging.debug(f'Peer at socket {self.socket} closed.')
+                    self.close()
+                    #raise RuntimeError("Peer closed")  
 
         _read()
 
