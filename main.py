@@ -289,6 +289,8 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
         for i in range(4):
             self.table.item(room_index, i).setBackground(QtGui.QColor(cl[0],cl[1],cl[2]))
             self.table.item(room_index,i).setTextAlignment(QtCore.Qt.AlignCenter)
+            self.table.setCurrentItem(self.table.item(room_index, i))
+            self.table.setCurrentItem(None)
 
 
     def insert_room_numbers(self):
