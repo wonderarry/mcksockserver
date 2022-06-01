@@ -90,7 +90,7 @@ border: 0px;}</string>
          <property name="font">
           <font>
            <family>Segoe UI</family>
-           <pointsize>42</pointsize>
+           <pointsize>40</pointsize>
            <weight>50</weight>
            <bold>false</bold>
           </font>
@@ -113,10 +113,10 @@ border: 0px;}</string>
      <widget class="QTableWidget" name="table">
       <property name="font">
        <font>
-        <family>Times New Roman</family>
-        <pointsize>12</pointsize>
-        <weight>75</weight>
-        <bold>true</bold>
+        <family>Helvetica</family>
+        <pointsize>40</pointsize>
+        <weight>50</weight>
+        <bold>false</bold>
        </font>
       </property>
       <property name="sizeAdjustPolicy">

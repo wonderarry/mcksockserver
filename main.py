@@ -43,7 +43,7 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.table.setStyleSheet(begin_wrap + font_size + end_wrap)
 
 
-        self.table.horizontalHeader().setStyleSheet("QHeaderView{" + font_size + end_wrap)
+        self.table.horizontalHeader().setStyleSheet("QHeaderView::section{" + "border: 1px solid black;" + font_size  + end_wrap)
         self.table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         self.table.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
 
