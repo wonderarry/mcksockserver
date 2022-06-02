@@ -136,27 +136,38 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
             logging.debug('Accepting new connection')
             connection, address = new_socket.accept()
             connection.setblocking(False)
-            message = servermessage.Message(self.selector, connection, address, self.package_recv_bytesize, self.room_values, self.doctor_values, self.study_values)
             events = selectors.EVENT_READ #| selectors.EVENT_WRITE
             #there is nothing for the server to write at this point
-            self.selector.register(connection, events, data = message)
+            self.selector.register(connection, events, data = servermessage.Message(self.selector, connection, address, self.package_recv_bytesize, self.room_values, self.doctor_values, self.study_values))
 
-       # def service_existing(key, mask):
-       #     socket = key.fileobj
-       #     data = key.data
-       #     if mask & selectors.EVENT_READ: #the socket is ready to be read from
-       #         received_data = socket.recv(self.package_recv_bytesize)
-       #         if received_data:
-       #             data.output_bytes += received_data
-       #         else: #no data on read event means the connection was terminated
-       #             self.selector.unregister(socket)
-       #             socket.close()
-       #     if mask & selectors.EVENT_WRITE:
-       #         if data.output_bytes:
-       #             sent = socket.send(data.output_bytes)
-       #             data.output_bytes = data.output_bytes[sent:]
-        #The function above would send the client back whatever is messaged to it, left for testing purposes
-        #print('in function')
+        def process_message(message):
+            is_action_needed = message.process_events_and_require_intervention(mask)
+            if is_action_needed:
+                request_room_index = message.request.get('data').get('room_index')
+                is_changing_status_same_room = (request_room_index == message.assigned_room_index)
+                is_room_unoccupied = self.is_room_available[request_room_index]
+
+                if is_changing_status_same_room or is_room_unoccupied:
+                    if message.assigned_room_index != -1 and (not is_changing_status_same_room): #already was connected, attempts new room
+                        self.is_room_available[message.assigned_room_index] = 1 #Cleaning up the slot for any other user
+                        self.cleanup_table(message.assigned_room_index)         #
+
+                    old_index = message.assigned_room_index
+
+                    self.is_room_available[request_room_index] = 0      #Occupy the room, update the info attached to the user
+                    message.assigned_room_index = request_room_index   #
+                    self.change_room_status(message.request.get('data'))#Fill in the data
+
+
+                    logging.debug(f"Successfully changed status for room {message.request.get('data').get('room_index')}, was {old_index}")
+                    message.insertion_buffer.append("Изменения успешно внесены!")
+
+                else: #both flags are false, means an attempt to connect to a preoccupied room. do nothing and say it's used.
+                    logging.warning(f"The room number {message.request.get('data').get('room_index')} is already occupied by another client!")
+                    message.insertion_buffer.append('Указанный номер кабинета уже используется.')
+                        
+
+
         while True:
             #timeout is 0 to not block even if there is nothing to process
             events = self.selector.select(timeout = 0)
@@ -169,38 +180,20 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
                     else:
                         message = key.data
                         try:
-                            need_action = message.process_events_and_require_intervention(mask)
-
-                            if need_action:
-
-                                ae_flag = (message.request.get('data').get('room_index') == message.assigned_room_index)
-                                av_flag = self.is_room_available[message.request.get('data').get('room_index')]
-                                if ae_flag or av_flag:
-                                    if Serverapp_Ui.data_from_client_check(message.request.get('data')):
-                                        if message.assigned_room_index != -1 and not ae_flag:
-                                            self.is_room_available[message.assigned_room_index] = 1
-                                            self.cleanup_table(message.assigned_room_index)
-
-                                        self.is_room_available[message.request.get('data').get('room_index')] = 0
-                                        last_index = message.assigned_room_index
-                                        message.assigned_room_index = message.request.get('data').get('room_index')
-
-                                        self.change_room_status(message.request.get('data'))
-                                        logging.debug(f"Successfully changed status for room {message.request.get('data').get('room_index')}, was {last_index}")
-                                        message.insertion_buffer.append("Изменения успешно внесены!")
-                                    else:
-                                        logging.warning("Provided data does not fit the value range")
-                                        message.insertion_buffer.append("Данные не прошли проверку. Сообщите IT-отделу")
-                                else:
-                                    logging.warning(f"The room number {message.request.get('data').get('room_index')} is already occupied by another client!")
-                                    message.insertion_buffer.append('Указанный номер кабинета уже используется.')
-
-
+                            process_message(message)
+                        except ConnectionResetError: #happens when remote host closes
+                            logging.warning(f"Host closed the connection: {message.address}", exc_info = True)
+                            #If this happens with index == -1, that means the user has not yet occupied a room
+                            #In this case we just close the message
+                            if message.assigned_room_index != -1:   #If this user has been using the application, we need to clean up after them
+                                self.is_room_available[message.assigned_room_index] = 1
+                                self.cleanup_table(message.assigned_room_index)
+                            message.close()
                         except Exception:
                             logging.error(f"Exception occured while trying to process event for {message.address}", exc_info = True)
-                            self.cleanup_table(message.assigned_room_index)
                             if message.assigned_room_index != -1:
                                 self.is_room_available[message.assigned_room_index] = 1
+                                self.cleanup_table(message.assigned_room_index)
                             message.close()
 
 
