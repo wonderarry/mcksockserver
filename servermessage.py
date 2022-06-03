@@ -227,6 +227,10 @@ class Message:
 #    
 #}
 
+    def insert_result(self, description: str, code_value: int):
+        self.insertion_buffer.append(description)
+        self.insertion_buffer.append(code_value)
+
 
     def determine_if_intervention_needed(self) -> bool:
         action = self.request.get('action')
@@ -243,7 +247,7 @@ class Message:
             else:
                 return False
             #self.acquired_data = self.request.get('data')
-            #self.is_action_required = True
+            #self.is_action_required = Truecreate_response
 
     #def _create_response_binary_content(self):
     #    pass
@@ -257,7 +261,10 @@ class Message:
                 'study_values': self.study_values
             }
         elif action == 'post_new_state':
-            content = {'result' : self.insertion_buffer[0]}
+            content = {
+                'result' : self.insertion_buffer[0],
+                'code_value': self.insertion_buffer[1]
+            }
         content_encoding = 'utf-8'
         response = {
             'content_bytes': Message._json_encode(content, content_encoding),

@@ -160,11 +160,12 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
 
                     logging.debug(f"Successfully changed status for room {message.request.get('data').get('room_index')}, was {old_index}")
-                    message.insertion_buffer.append("Изменения успешно внесены!")
+                    message.insert_result("Изменения успешно внесены!", 0)
 
                 else: #both flags are false, means an attempt to connect to a preoccupied room. do nothing and say it's used.
                     logging.warning(f"The room number {message.request.get('data').get('room_index')} is already occupied by another client!")
-                    message.insertion_buffer.append('Указанный номер кабинета уже используется.')
+                    
+                    message.insert_result("Указанный номер кабинета уже используется.", 1)
                         
 
 
