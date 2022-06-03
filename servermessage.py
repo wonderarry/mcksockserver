@@ -40,17 +40,6 @@ class Message:
                 return True
 
 
-    # def _read(self):
-    #     try:
-    #         data = self.socket.recv(self.package_size)
-    #     except BlockingIOError:
-    #         pass
-    #     else:
-    #         if data:
-    #             self._receive_buffer += data
-    #         else:
-    #             raise RuntimeError("Peer closed")   
-
 
     def process_protoheader(self):
         header_length = 2 #in bytes
@@ -141,19 +130,6 @@ class Message:
                     self.insertion_buffer = []
         _write()
 
-
-    # def _write(self):
-    #     if self._send_buffer:
-    #         try:
-    #             sent = self.socket.send(self._send_buffer)
-    #         except BlockingIOError:
-    #             pass
-    #         else:
-    #             self._send_buffer = self._send_buffer[sent:]
-    #             if sent and not self._send_buffer:
-    #                 #at this point the message is fully sent
-    #                 self.reset_reading_state()
-    #                 #self.close()              
 
     def buffer_insert(self, *args):
         for a in args:

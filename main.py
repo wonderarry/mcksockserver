@@ -1,10 +1,10 @@
 import selectors
-from telnetlib import STATUS
+
 from PyQt5 import QtWidgets, QtCore, QtGui
 import design
-import sys
+
 import socket
-import types
+
 import threading
 import configparser
 import time
@@ -15,12 +15,18 @@ import os
 import playsound
 import logging
 import datetime
-import struct
-import json
-import servermessage
-import io
-from pathlib import Path
 
+import servermessage
+
+
+
+# wanted items in cfg: 
+# names of state options,
+# custom voiceover template for announcer,
+# option to switch to/from per-letter numbers reading,
+# font size of the header description,
+# border size of the horizontal header,
+# color palette for states
 
 class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
