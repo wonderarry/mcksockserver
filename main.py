@@ -112,7 +112,19 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
         #add all room numbers to the table
         self.doctor_values = Serverapp_Ui.parse_list(conf.get('frontend_settings', 'doctor_values'))
         self.study_values = Serverapp_Ui.parse_list(conf.get('frontend_settings', 'study_values'))
-        self.state_values = ['Нет приема', 'Свободно', 'Занято']
+        
+        noentry = conf.get('frontend_settings', 'status_no_entry_nickname')
+        occup = conf.get('frontend_settings', 'status_occupied_nickname')
+        empt = conf.get('frontend_settings', 'status_empty_nickname')
+        waiting = conf.get('frontend_settings', 'status_await_nickname')
+        self.state_values = [noentry, occup, empt, waiting]
+
+        self.message_no_entry = conf.get('frontend_settings', 'message_no_entry')
+        self.message_occupied = conf.get('frontend_settings', 'message_occupied')
+        self.message_empty = conf.get('frontend_settings', 'message_empty')
+        self.message_await = conf.get('frontend_settings', 'message_empty')
+
+
         logging.debug('Have read backend values. Inserting rooms...')
         self.insert_room_numbers()
         logging.debug('Inserted rooms. Applying frontend settings...')
@@ -246,7 +258,7 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
 #        'room_index': int,
 #        'doctor_index': int,
 #        'study_index': int,
-#        'state_index': int    #0 - standby, 1 - not ready, 2 - ready
+#        'state_index': int    #0 - noentry, 1 - occupied, 2 - ready, 3 - await
 #    }
 
     @staticmethod
@@ -268,8 +280,18 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
         room_index = data.get('room_index')
 
         if not is_from_start:
-            voiceover_text = f"В кабинете {' '.join([i + ' ' for i in self.room_values[room_index]])} {self.state_values[data.get('state_index')]}"
-            self.enqueue_text(voiceover_text)
+            #voiceover_text = f"В кабинете {' '.join([i + ' ' for i in self.room_values[room_index]])} {self.state_values[data.get('state_index')]}"
+            st = data.get('state_index')
+            if st == 0:
+                text = self.message_no_entry
+            elif st == 1:
+                text = self.message_occupied
+            elif st == 2:
+                text = self.message_empty
+            elif st == 3:
+                text = self.message_await
+            text = text.replace('[]', ' '.join([i + ' ' for i in self.room_values[room_index]]))
+            self.enqueue_text(text)
 
         doctor = Serverapp_Ui.soft_wrap_line(self.doctor_values[data.get('doctor_index')])
         study = Serverapp_Ui.soft_wrap_line(self.study_values[data.get('study_index')])
@@ -283,9 +305,11 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
         state = data.get('state_index')
         cl = [200,200,200]
         if state == 1:
-            cl = [207,253,188]
-        elif state == 2:
             cl = [233,133,135]
+        elif state == 2:
+            cl = [207,253,188]
+        elif state == 3:
+            cl = [255, 255, 167]
         for i in range(4):
             self.table.item(room_index, i).setBackground(QtGui.QColor(cl[0],cl[1],cl[2]))
             self.table.item(room_index,i).setTextAlignment(QtCore.Qt.AlignCenter)

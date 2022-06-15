@@ -198,7 +198,7 @@ class Message:
 #        'room_index': int,
 #        'doctor_index': int,
 #        'study_index': int,
-#        'state_index': int    #0 - standby, 1 - not ready, 2 - ready
+#        'state_index': int    #0 - noentry, 1 - occupied, 2 - empty, 3 - await
 #    }
 #    
 #}
