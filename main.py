@@ -113,16 +113,16 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.doctor_values = Serverapp_Ui.parse_list(conf.get('frontend_settings', 'doctor_values'))
         self.study_values = Serverapp_Ui.parse_list(conf.get('frontend_settings', 'study_values'))
         
-        noentry = conf.get('frontend_settings', 'status_no_entry_nickname')
-        occup = conf.get('frontend_settings', 'status_occupied_nickname')
-        empt = conf.get('frontend_settings', 'status_empty_nickname')
-        waiting = conf.get('frontend_settings', 'status_await_nickname')
+        noentry = conf.get('frontend_settings', 'status_no_entry_nickname').replace('"','')
+        occup = conf.get('frontend_settings', 'status_occupied_nickname').replace('"','')
+        empt = conf.get('frontend_settings', 'status_empty_nickname').replace('"','')
+        waiting = conf.get('frontend_settings', 'status_await_nickname').replace('"','')
         self.state_values = [noentry, occup, empt, waiting]
 
         self.message_no_entry = conf.get('frontend_settings', 'message_no_entry')
         self.message_occupied = conf.get('frontend_settings', 'message_occupied')
         self.message_empty = conf.get('frontend_settings', 'message_empty')
-        self.message_await = conf.get('frontend_settings', 'message_empty')
+        self.message_await = conf.get('frontend_settings', 'message_await')
 
 
         logging.debug('Have read backend values. Inserting rooms...')
@@ -183,7 +183,7 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
                 else: #both flags are false, means an attempt to connect to a preoccupied room. do nothing and say it's used.
                     logging.warning(f"The room number {message.request.get('data').get('room_index')} is already occupied by another client!")
                     
-                    message.insert_result("Указанный номер кабинета уже используется.", 1)
+                    message.insert_result("Этот кабинет уже занят.", 1)
                         
 
 
