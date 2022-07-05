@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1743</width>
-    <height>1118</height>
+    <height>1108</height>
    </rect>
   </property>
   <property name="font">
@@ -181,6 +181,22 @@ border: 0px;}</string>
         <string>СТАТУС</string>
        </property>
       </column>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="ad_label">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>100</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>TextLabel</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
      </widget>
     </item>
    </layout>

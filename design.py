@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1743, 1118)
+        MainWindow.resize(1743, 1108)
         font = QtGui.QFont()
         font.setFamily("Helvetica Rounded")
         font.setBold(True)
@@ -91,6 +91,11 @@ class Ui_MainWindow(object):
         self.table.verticalHeader().setMinimumSectionSize(110)
         self.table.verticalHeader().setStretchLastSection(False)
         self.verticalLayout.addWidget(self.table)
+        self.ad_label = QtWidgets.QLabel(self.centralwidget)
+        self.ad_label.setMinimumSize(QtCore.QSize(0, 100))
+        self.ad_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.ad_label.setObjectName("ad_label")
+        self.verticalLayout.addWidget(self.ad_label)
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
@@ -109,3 +114,4 @@ class Ui_MainWindow(object):
         item.setText(_translate("MainWindow", "ИССЛЕДОВАНИЕ"))
         item = self.table.horizontalHeaderItem(3)
         item.setText(_translate("MainWindow", "СТАТУС"))
+        self.ad_label.setText(_translate("MainWindow", "TextLabel"))

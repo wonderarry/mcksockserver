@@ -15,8 +15,13 @@ import os
 import playsound
 import logging
 import datetime
+import shutil
 
 import servermessage
+
+
+
+
 
 
 
@@ -60,6 +65,8 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.picture_label.setPixmap(QtGui.QPixmap.fromImage(img_profile))
 
 
+
+
         for i in range(self.table.rowCount()):
             for j in range(self.table.columnCount()):
                 self.table.item(i,j).setBackground(QtGui.QColor(200,200,200))
@@ -77,6 +84,24 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
         #for i in range(self.table.rowCount()):
         #    for j in range(self.table.columnCount()):
         #        self.table.item(i, j).setStyleSheet("QTableWidgetItem {" + font_color + "}")
+
+    def show_next_ad(self):
+        if self.ad_image_timer.isActive():
+            return
+        self.movie.stop()
+        self.ad_index += 1
+        if self.ad_index == len(self.ad_filenames):
+            self.ad_index = 0
+        print('here!', self.ad_index)
+        self.movie.setFileName(self.ad_filenames[self.ad_index])
+        
+        if self.movie.frameCount() == 1:
+            self.ad_image_timer.start(1000 * self.ad_timeout)
+            self.movie.start()
+        else:
+            self.ad_image_timer.start(int(1000 * self.movie.frameCount() / self.ad_estimated_frame_count) + self.ad_estimated_frame_count)
+            self.movie.start()
+
 
 
     def apply_config(self, config_name = 'config.ini'):
@@ -101,6 +126,55 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.port_value = int(conf.get('socket_settings', 'port'))
         self.no_selector_events_timeout = float(conf.get('socket_settings', 'no_selector_events_timeout'))
         self.package_recv_bytesize = int(conf.get('socket_settings', 'package_recv_bytesize'))
+
+        #setting up the ad window
+        if not os.path.exists('ads/'):
+            os.makedirs('ads')
+        self.ad_height = int(conf.get('frontend_settings' , 'ad_height'))
+        self.ad_estimated_frame_count = float(conf.get('frontend_settings', 'ad_estimated_frame_count'))
+
+        # imagepath = 'logo.jpg'
+        # img_profile = QtGui.QImage(imagepath)
+        # img_profile = img_profile.scaled(640, 160, aspectRatioMode=QtCore.Qt.KeepAspectRatio, transformMode=QtCore.Qt.SmoothTransformation)
+        # self.picture_label.setPixmap(QtGui.QPixmap.fromImage(img_profile))
+        self.ad_filenames = ['ads/' + item for item in os.listdir('ads')]
+        self.ad_timeout = int(conf.get('frontend_settings', 'ad_timeout'))
+        self.ad_index = len(self.ad_filenames) - 1
+        if len(self.ad_filenames) == 0:
+            self.ad_label.hide()
+        else:
+            self.ad_label.setMinimumHeight(0)
+            self.ad_label.setMaximumHeight(166666)
+            self.ad_label.resize(self.ad_label.width(), self.ad_height)
+            self.ad_label.setMinimumHeight(self.ad_height)
+            self.ad_label.setMaximumHeight(self.ad_height)
+            self.ad_label.resize(self.ad_label.width(), self.ad_height)
+
+            self.movie = QtGui.QMovie()
+            self.ad_label.setMovie(self.movie)
+            self.movie.setFileName(self.ad_filenames[0])
+            self.movie.start()
+            self.ad_image_timer = QtCore.QTimer(self)
+            self.ad_image_timer.setSingleShot(True)
+            self.ad_image_timer.timeout.connect(self.show_next_ad)
+            self.movie.finished.connect(self.show_next_ad)
+            
+            #self.ad_thread = threading.Thread(target = self.show_next_ad, daemon = True)
+            #self.ad_thread.start()
+            
+
+        #self.socket_thread = threading.Thread(target = self.manage_socket_events, daemon = True)
+        #self.socket_thread.start()
+
+        
+        # if adheight > 0:
+        #     adfilename = conf.get('frontend_settings', 'ad_file_name').strip('"').rstrip('"')
+        #     self.ad_label.setMaximumHeight(adheight)
+        #     self.ad_label.setMinimumHeight(adheight)
+        #     self.ad_label.setFixedHeight(adheight)
+        #     movie = QtGui.QMovie(adfilename)
+        #     self.ad_label.setMovie(movie)
+        #     self.ad_label.start()
 
         #setting columns to hidden state if required
         self.table.setColumnHidden(1, int(conf.get('frontend_settings', 'hide_doctor_column')))
@@ -171,11 +245,14 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
                         self.cleanup_table(message.assigned_room_index)         #
 
                     old_index = message.assigned_room_index
-
-                    self.is_room_available[request_room_index] = 0      #Occupy the room, update the info attached to the user
-                    message.assigned_room_index = request_room_index   #
-                    self.change_room_status(message.request.get('data'))#Fill in the data
-
+                    message.assigned_room_index = request_room_index
+                    if message.request.get('data').get('state_index') != 0:
+                        self.is_room_available[request_room_index] = 0      #Occupy the room, update the info attached to the user
+                        self.change_room_status(message.request.get('data'))#Fill in the data
+                    else:
+                        self.is_room_available[message.assigned_room_index] = 1 #Cleaning up the slot for any other user
+                        self.cleanup_table(message.assigned_room_index) 
+                        self.assigned_room_index = -1 
 
                     logging.debug(f"Successfully changed status for room {message.request.get('data').get('room_index')}, was {old_index}")
                     message.insert_result("Изменения успешно внесены!", 0)
@@ -398,6 +475,7 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
     def __init__(self):
         super().__init__()
+        shutil.rmtree('audio_resources')
         self.setupUi(self)
         self.audio_queue = queue.Queue()
         self.apply_config('config.ini')
@@ -415,9 +493,13 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
 
 def main():
+    
     app = QtWidgets.QApplication([])
+    splashscreen = QtWidgets.QSplashScreen(QtGui.QPixmap('splashscreen.png'))
+    splashscreen.show()
 
     window = Serverapp_Ui()
+    splashscreen.hide()
     window.show()
     app.exec_()
 
