@@ -475,7 +475,8 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
     def __init__(self):
         super().__init__()
-        shutil.rmtree('audio_resources')
+        if os.path.exists('audio_resources/'):
+            shutil.rmtree('audio_resources')
         self.setupUi(self)
         self.audio_queue = queue.Queue()
         self.apply_config('config.ini')

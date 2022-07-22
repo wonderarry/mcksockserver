@@ -83,6 +83,9 @@ class Message:
                 data = self.socket.recv(self.package_size)
             except BlockingIOError:
                 pass
+            except ConnectionResetError:
+                logging.debug(f'Peer at socket {self.socket} closed.')
+                self.close()
             else:
                 if data:
                     self._receive_buffer += data
