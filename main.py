@@ -129,6 +129,7 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
         #setting up the ad window
         if not os.path.exists('ads/'):
+            logging.debug('Created ad folder')
             os.makedirs('ads')
         self.ad_height = int(conf.get('frontend_settings' , 'ad_height'))
         self.ad_estimated_frame_count = float(conf.get('frontend_settings', 'ad_estimated_frame_count'))
@@ -141,6 +142,7 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.ad_timeout = int(conf.get('frontend_settings', 'ad_timeout'))
         self.ad_index = len(self.ad_filenames) - 1
         if len(self.ad_filenames) == 0:
+            logging.debug('No ads found in the folder, omitting ad block')
             self.ad_label.hide()
         else:
             self.ad_label.setMinimumHeight(0)
@@ -305,6 +307,7 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
     @staticmethod
     def data_from_client_check(data):
+        #to be implemented in case we need protection from malicious intervention
         return True
 
 
@@ -476,6 +479,7 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
     def __init__(self):
         super().__init__()
         if os.path.exists('audio_resources/'):
+            logging.debug('Had audio_resources folder, removing older instance')
             shutil.rmtree('audio_resources')
         self.setupUi(self)
         self.audio_queue = queue.Queue()
