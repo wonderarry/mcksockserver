@@ -19,7 +19,7 @@ import shutil
 
 import servermessage
 
-
+APP_VERSION = 10
 
 
 
@@ -232,16 +232,22 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
             connection.setblocking(False)
             events = selectors.EVENT_READ #| selectors.EVENT_WRITE
             #there is nothing for the server to write at this point
-            self.selector.register(connection, events, data = servermessage.Message(self.selector, connection, address, self.package_recv_bytesize, self.room_values, self.doctor_values, self.study_values))
+            self.selector.register(connection, events, data = servermessage.Message(self.selector, connection, address, self.package_recv_bytesize, self.room_values, self.doctor_values, self.study_values, APP_VERSION))
 
         def process_message(message):
             is_action_needed = message.process_events_and_require_intervention(mask)
             if is_action_needed:
+                #if message.request.get('version') < APP_VERSION:
+                #    print('versionissue')
+                #    message.insert_result('Версия клиента устарела', 2)
+                #    logging.warning(f"Client version mismatch. Client's address - {message.address}")
+                #    return
+                    
                 request_room_index = message.request.get('data').get('room_index')
                 is_changing_status_same_room = (request_room_index == message.assigned_room_index)
                 is_room_unoccupied = self.is_room_available[request_room_index]
 
-                if is_changing_status_same_room or is_room_unoccupied:
+                if (is_changing_status_same_room or is_room_unoccupied):
                     if message.assigned_room_index != -1 and (not is_changing_status_same_room): #already was connected, attempts new room
                         self.is_room_available[message.assigned_room_index] = 1 #Cleaning up the slot for any other user
                         self.cleanup_table(message.assigned_room_index)         #
@@ -287,12 +293,17 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
                                 self.is_room_available[message.assigned_room_index] = 1
                                 self.cleanup_table(message.assigned_room_index)
                             message.close()
+                        #except ValueError:
+                        #    logging.warning(f"Client version mismatch. Client's address - {message.address}", exc_info = True)
+                        #    message.insert_result('Версия клиента устарела', 2)
+                        #    message.close()
                         except Exception:
                             logging.error(f"Exception occured while trying to process event for {message.address}", exc_info = True)
                             if message.assigned_room_index != -1:
                                 self.is_room_available[message.assigned_room_index] = 1
                                 self.cleanup_table(message.assigned_room_index)
                             message.close()
+
 
 
     def cleanup_table(self, index):

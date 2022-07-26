@@ -15,11 +15,12 @@ class Message:
         return json.dumps(obj = object, ensure_ascii = False).encode(encoding)    
 
     def __init__ (self, selector: selectors.DefaultSelector, socket: socket.socket, address: any,
-     package_size: int, room_values: list, doctor_values: list, study_values: list):
+     package_size: int, room_values: list, doctor_values: list, study_values: list, version_name: int):
         self.selector = selector
         self.socket = socket
         self.address = address
         self.package_size = package_size
+        self.version_name = version_name
 
         self.room_values = room_values
         self.doctor_values = doctor_values
@@ -214,6 +215,10 @@ class Message:
     def determine_if_intervention_needed(self) -> bool:
         action = self.request.get('action')
         if action == 'get_field_values':
+            if self.request.get('version') < self.version_name:
+                logging.warning(f"Client version mismatch. Client's version is {self.request.get('version')}, address - {self.address}")
+                self.insertion_buffer = ['Версия клиента устарела', 2]
+                return False
             return False
             #content = {
             #    'room_values': self.room_values,
@@ -234,11 +239,20 @@ class Message:
     def _create_response(self):
         action = self.request.get('action')
         if action == 'get_field_values':
-            content = {
-                'room_values': self.room_values,
-                'doctor_values': self.doctor_values,
-                'study_values': self.study_values
-            }
+
+            if len(self.insertion_buffer) > 0:
+                if self.insertion_buffer[1] == 2:
+                    content = {
+                    'result' : self.insertion_buffer[0],
+                    'code_value': self.insertion_buffer[1]
+                    }
+            else:
+                content = {
+                    'room_values': self.room_values,
+                    'doctor_values': self.doctor_values,
+                    'study_values': self.study_values,
+                    'code_value': 0
+                }
         elif action == 'post_new_state':
             content = {
                 'result' : self.insertion_buffer[0],
