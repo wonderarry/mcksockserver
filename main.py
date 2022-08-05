@@ -19,7 +19,7 @@ import shutil
 
 import servermessage
 
-APP_VERSION = 10
+APP_VERSION = 11
 
 
 
@@ -116,11 +116,13 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
         folderpath = '/'.join(logging_filename.split('/')[:-1])
         if not os.path.exists(folderpath):
             os.makedirs(folderpath)
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)    
         open(logging_filename, "w+")
-        logging.basicConfig(filename = logging_filename, level = int(conf.get('logging_settings', 'logging_level')))
+        logging.basicConfig(filename = logging_filename, level = int(conf.get('logging_settings', 'logging_level')), datefmt='%Y-%m-%d %H:%M:%S', format='%(asctime)s %(levelname)-8s %(message)s')
 
         logging.debug('Logger is set up. Reading config...')
-
+        self.timeout_no_exchange = int(conf.get('socket_settings', 'timeout_no_exchange'))
         #reading the socket settings
         self.host_value = conf.get('socket_settings', 'host')
         self.port_value = int(conf.get('socket_settings', 'port'))
@@ -276,6 +278,18 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
             #timeout is 0 to not block even if there is nothing to process
             events = self.selector.select(timeout = 0)
             if events == []:
+                print(list(self.selector.get_map().values()))
+                for key in list(self.selector.get_map().values()):
+                    if key.data is not None:
+                        print(int(time.time()) - key.data.unix_last_message)
+                        if int(time.time()) - key.data.unix_last_message > self.timeout_no_exchange:
+                            logging.warning(f"No response from client, closing: {key.data.address}", exc_info = True)
+                            #If this happens with index == -1, that means the user has not yet occupied a room
+                            #In this case we just close the message
+                            if key.data.assigned_room_index != -1:   #If this user has been using the application, we need to clean up after them
+                                self.is_room_available[key.data.assigned_room_index] = 1
+                                self.cleanup_table(key.data.assigned_room_index)
+                            key.data.close()
                 time.sleep(self.no_selector_events_timeout)
             else:
                 for key, mask in events:
@@ -283,6 +297,7 @@ class Serverapp_Ui(QtWidgets.QMainWindow, design.Ui_MainWindow):
                         accept_new(key.fileobj)
                     else:
                         message = key.data
+                        message.unix_last_message = int(time.time())
                         try:
                             process_message(message)
                         except ConnectionResetError: #happens when remote host closes

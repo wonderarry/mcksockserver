@@ -1,4 +1,4 @@
-import socket, selectors, struct, io, sys, logging, json
+import socket, selectors, struct, io, sys, logging, json, time
 
 
 class Message:
@@ -25,6 +25,7 @@ class Message:
         self.room_values = room_values
         self.doctor_values = doctor_values
         self.study_values = study_values
+        self.unix_last_message = int(time.time())
 
         self.assigned_room_index = -1
 
